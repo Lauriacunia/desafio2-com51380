@@ -22,7 +22,6 @@ class ProductManager {
     const allProductsArray = this.read();
     allProductsArray.push(newProduct);
     this.write(allProductsArray);
-    //console.log("allProductsArray saved", allProductsArray);
   }
 
   getNextId() {
@@ -36,27 +35,25 @@ class ProductManager {
   }
 
   getProductById(id) {
-    const product = this.products.find((product) => product.id === id);
+    let allProductsArray = this.read(this.file);
+    const product = allProductsArray.find((product) => product.id === id);
     if (!product) {
-      throw new Error("Product not found");
+      throw new Error("Get by id. Product not found");
     }
     return product;
   }
 
   getProducts() {
-    return this.read();
+    return this.read(this.file);
   }
 
   updateProduct(id, newProduct) {
-    const product = this.products.find((product) => product.id === id);
-    if (!product) {
-      throw new Error("Product not found");
-    }
-    const productExists = this.products.find(
-      (product) => newProduct.code === product.code
+    let allProductsArray = this.read(this.file);
+    const productToUpdate = allProductsArray.find(
+      (product) => product.id === id
     );
-    if (productExists) {
-      throw new Error("Bad request. Product code already exists");
+    if (!productToUpdate) {
+      throw new Error("Update. Product not found");
     }
     if (
       !newProduct.title ||
@@ -69,27 +66,50 @@ class ProductManager {
       throw new Error("Bad request. Missing fields");
     }
 
-    product.title = newProduct.title;
-    product.description = newProduct.description;
-    product.price = newProduct.price;
-    product.thumbnail = newProduct.thumbnail;
-    product.code = newProduct.code;
-    product.stock = newProduct.stock;
+    const updatedProduct = this.updateProductFields(
+      productToUpdate,
+      newProduct
+    );
+    const index = allProductsArray.indexOf(productToUpdate);
+    allProductsArray[index] = updatedProduct;
+    this.write(allProductsArray);
 
-    return product;
+    const response = {
+      message: "Product updated successfully",
+      product: updatedProduct,
+    };
+    return response;
+  }
+
+  updateProductFields(productToUpdate, newProduct) {
+    /** 🗨 Los campos que se repiten los actualiza,
+     * los que no (como el id) los deja igual */
+    const updatedProduct = {
+      ...productToUpdate,
+      ...newProduct,
+    };
+    return updatedProduct;
   }
 
   deleteProductById(id) {
-    const product = this.products.find((product) => product.id === id);
+    const allProductsArray = this.read(this.file);
+    const product = allProductsArray.find((product) => product.id === id);
     if (!product) {
-      throw new Error("Product not found");
+      throw new Error("Delete. Product not found");
     }
-    const index = this.products.indexOf(product);
-    this.products.splice(index, 1);
+    console.log("🔥 Producto a eliminar: ", product);
+    const index = allProductsArray.indexOf(product);
+    allProductsArray.splice(index, 1);
+    this.write(allProductsArray);
+    const response = {
+      message: "Product deleted successfully",
+      product: product,
+    };
+    return response;
   }
 
   deleteAllProducts() {
-    const allProductsArray = this.read();
+    const allProductsArray = this.read(this.file);
     allProductsArray.splice(0, allProductsArray.length);
     this.write(allProductsArray);
   }
